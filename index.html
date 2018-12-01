@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #diagramContainer {
+      font-size: smaller;   
+      padding: 20px;
+      height: 400px;
+      border: 1px solid gray;
+      background: #fff;
+      background-image: 
+        linear-gradient(#bab5b54d 1px, transparent 0), 
+        linear-gradient(90deg, #bab5b54d 1px, transparent 0), 
+        linear-gradient(#bab5b54d 1px, transparent 0), 
+        linear-gradient(90deg, #bab5b54d 1px, transparent 0);
+      background-size: 15px 15px, 15px 15px, 75px 75px, 75px 75px;
+    }
+
+    .rectangle-size {
+      position: absolute;
+      text-align: center;
+      line-height: 40px;
+      height: 40px;
+      width: 100px;
+      border: 2px solid #000;
+      border-radius: 5px;
+    }
+
+    .circle-size {
+      position: absolute;
+      text-align: center;
+      line-height: 100px;
+      height: 100px;
+      width: 100px;
+      border: 2px solid #000;
+      border-radius: 50px;
+    }
+
+    .cst-label {
+      background-color: white; 
+      padding: 5px;
+    }
+
+    .dim-color {
+      color: #a2a1a1;
+      border-color: #a2a1a1;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="diagramContainer">
+    <div id="alert_occur" class="rectangle-size">告警发生</div>
+    <div id="alert_sync" class="rectangle-size" style="left: 200px;">告警同步</div>
+    <div id="alert_storage" class="rectangle-size" style="left: 400px;" >告警入库</div>
+    <div id="alert_conv" class="rectangle-size" style="left: 600px;">创建/收敛单子</div>
+    <div id="alert_analysis" class="circle-size" style="left: 400px; top: 150px; background-color: #8ec2eb">告警分析</div>
+
+    <div id="alert_ass_analysis" class="rectangle-size" style="left: 540px; top: 100px;">告警XX分析</div>
+    <div id="alert_ass_sync" class="rectangle-size" style="left: 700px; top: 100px;">同步XX信息</div>
+    <div id="alert_reason_analysis" name="alert_reason_analysis" class="rectangle-size" style="left:860px; top: 100px;">告警YY分析</div>
+    <div id="alert_reason_sync" name="alert_reason_analysis" class="rectangle-size" style="left: 1020px; top: 100px;">同步YY分析</div>
+
+    <div id="alert_std_analysis" name="alert_std_analysis" class="rectangle-size" style="left: 540px; top: 180px;">ZZ分析</div>
+    <div id="alert_std_sync" name="alert_std_analysis" class="rectangle-size" style="left: 700px; top: 180px;">同步ZZ分析</div>
+
+    <div id="alert_check_analysis" name="alert_check_analysis" class="rectangle-size" style="left: 540px; top: 260px;">MM分析</div>
+    <div id="alert_check_sync" name="alert_check_analysis" class="rectangle-size" style="left: 700px; top: 260px;">同步MM分析</div>
+  </div>
+  <script src="./js/jquery-1.11.3.js"></script>
+  <script src="./js/jquery-ui.js"></script>
+  <script src="./js/jquery.jsplumb.js"></script>
+
+  <script>
+    /* global jsPlumb */
+    function makeStyle(flag) {
+      let config = {};
+      config.connectorPaintStyle = {
+        lineWidth: 1,
+        strokeStyle: flag == 'dim' ? '#a2a1a1' : 'black',
+        joinstyle: 'round',
+        outlineColor: '',
+        outlineWidth: ''
+      };
+
+      // 鼠标悬浮在连接线上的样式
+      config.connectorHoverStyle = {
+        lineWidth: 2,
+        strokeStyle: '#4caf50',
+        outlineWidth: 10,
+        outlineColor: ''
+      };
+
+      return {
+        // 端点形状
+        endpoint: ['Dot', {
+          radius: 6,
+          fill: flag == 'dim' ? '#a2a1a1' : 'black'
+        }],
+        // 连接线的样式
+        connectorStyle: config.connectorPaintStyle,
+        connectorHoverStyle: config.connectorHoverStyle,
+        // 端点的样式
+        paintStyle: {
+          fillStyle: flag == 'dim' ? '#a2a1a1' : 'black',
+          radius: 4
+        },
+        hoverPaintStyle: {
+          fillStyle: '#4caf50',
+          strokeStyle: '#4caf50'
+        },
+        isSource: true,
+        connector: ['Straight', {
+          gap: 0,
+          cornerRadius: 5,
+          alwaysRespectStubs: true
+        }],
+        isTarget: true,
+        // 设置连接点最多可以链接几条线
+        maxConnections: -1,
+        connectorOverlays: [
+          ['Arrow', {
+            width: 8,
+            length: 10,
+            location: 1
+          }]
+        ]
+      };
+    }
+    
+    let config = {
+      baseStyle: makeStyle('base'),
+      dimStyle: makeStyle('dim')
+    };
+    let connections = {};
+
+    jsPlumb.ready(function () {
+      let nodes_data = {};    
+      let alert_nodes = ["alert_storage", "alert_conv", "alert_ass_analysis"]
+      let analysis_nodes = ["alert_reason_analysis", "alert_std_analysis", "alert_check_analysis"];
+      alert_nodes.map(item => nodes_data[item] = {
+        exist: true,
+        cost: (Math.random() * 10).toFixed(1)
+      });
+      analysis_nodes.map(item => nodes_data[item] = {
+        exist: Math.random() * 10 > 3,
+        cost: (Math.random() * 10).toFixed(1)
+      });
+      let pointStyle = config.baseStyle;
+
+      jsPlumb.setContainer('diagramContainer');   
+      jsPlumb.addEndpoint('alert_occur', {uuid: 'alert_occur_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_sync', {uuid: 'alert_sync_l', anchor: 'Left'}, pointStyle);
+      jsPlumb.addEndpoint('alert_sync', {uuid: 'alert_sync_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_storage', {uuid: 'alert_storage_l', anchor: 'Left'}, pointStyle);
+      jsPlumb.addEndpoint('alert_storage', {uuid: 'alert_storage_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_storage', {uuid: 'alert_storage_b', anchor: 'Bottom'}, pointStyle);
+      jsPlumb.addEndpoint('alert_conv', {uuid: 'alert_conv_l', anchor: 'Left'}, pointStyle);
+      jsPlumb.addEndpoint('alert_analysis', {uuid: 'alert_analysis_t', anchor: 'Top'}, pointStyle);   
+      jsPlumb.addEndpoint('alert_analysis', {uuid: 'alert_analysis_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_ass_analysis', {uuid: 'alert_ass_analysis_l', anchor: 'Left'}, pointStyle);
+      jsPlumb.addEndpoint('alert_ass_analysis', {uuid: 'alert_ass_analysis_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_ass_sync', {uuid: 'alert_ass_sync_l', anchor: 'Left'}, pointStyle);
+
+      if (nodes_data.alert_reason_analysis.exist) {
+        pointStyle = config.baseStyle;
+      } else {
+        pointStyle = config.dimStyle;
+      }
+      jsPlumb.addEndpoint('alert_ass_sync', {uuid: 'alert_ass_sync_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_reason_analysis', {uuid: 'alert_reason_analysis_l', anchor: 'Left'}, pointStyle);
+      jsPlumb.addEndpoint('alert_reason_analysis', {uuid: 'alert_reason_analysis_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_reason_sync', {uuid: 'alert_reason_sync_l', anchor: 'Left'}, pointStyle);
+
+      if (nodes_data.alert_std_analysis.exist) {
+        pointStyle = config.baseStyle;
+      } else {
+        pointStyle = config.dimStyle;
+      }
+      jsPlumb.addEndpoint('alert_std_analysis', {uuid: 'alert_std_analysis_l', anchor: 'Left'}, pointStyle);
+      jsPlumb.addEndpoint('alert_std_analysis', {uuid: 'alert_std_analysis_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_std_sync', {uuid: 'alert_std_sync_l', anchor: 'Left'}, pointStyle);
+
+      if (nodes_data.alert_check_analysis.exist) {
+        pointStyle = config.baseStyle;
+      } else {
+        pointStyle = config.dimStyle;
+      }
+      jsPlumb.addEndpoint('alert_check_analysis', {uuid: 'alert_check_analysis_l', anchor: 'Left'}, pointStyle);
+      jsPlumb.addEndpoint('alert_check_analysis', {uuid: 'alert_check_analysis_r', anchor: 'Right'}, pointStyle);
+      jsPlumb.addEndpoint('alert_check_sync', {uuid: 'alert_check_sync_l', anchor: 'Left'}, pointStyle);
+
+      jsPlumb.connect({uuids: ['alert_occur_r', 'alert_sync_l']});
+      let alert_storage = jsPlumb.connect({uuids: ['alert_sync_r', 'alert_storage_l']});
+      alert_storage.addOverlay(['Custom', {
+        create: function (component) {
+          return $('<span style="background-color: white; padding: 5px;">过滤</span>');
+        },
+        location: 0.5
+      }]);
+      connections['alert_storage'] = alert_storage;
+
+      let alert_conv = jsPlumb.connect({uuids: ['alert_storage_r', 'alert_conv_l']});
+      connections['alert_conv'] = alert_conv;
+   
+      jsPlumb.connect({uuids: ['alert_storage_b', 'alert_analysis_t']});
+      let alert_ass_analysis = jsPlumb.connect({uuids: ['alert_analysis_r', 'alert_ass_analysis_l']});
+      connections['alert_ass_analysis'] = alert_ass_analysis;
+      jsPlumb.connect({uuids: ['alert_ass_analysis_r', 'alert_ass_sync_l']});
+      let alert_reason_analysis = jsPlumb.connect({uuids: ['alert_ass_sync_r', 'alert_reason_analysis_l']});
+      connections['alert_reason_analysis'] = alert_reason_analysis;
+      jsPlumb.connect({uuids: ['alert_reason_analysis_r', 'alert_reason_sync_l']});
+
+      let alert_std_analysis = jsPlumb.connect({uuids: ['alert_analysis_r', 'alert_std_analysis_l']});
+      connections['alert_std_analysis'] = alert_std_analysis;
+      jsPlumb.connect({uuids: ['alert_std_analysis_r', 'alert_std_sync_l']});
+
+      let alert_check_analysis = jsPlumb.connect({uuids: ['alert_analysis_r', 'alert_check_analysis_l']});
+      connections['alert_check_analysis'] = alert_check_analysis;
+      jsPlumb.connect({uuids: ['alert_check_analysis_r', 'alert_check_sync_l']});
+
+      jsPlumb.draggable(
+        $(".rectangle-size,.circle-size"), 
+        {containment: 'diagramContainer'}
+      );
+
+      console.info(nodes_data);
+      displayTimeCost(nodes_data);
+    });
+
+    function displayTimeCost(nodes_data) {
+      for (let con in nodes_data) {
+        debugger
+        if (!nodes_data[con].exist) {
+          $(`[name=${con}]`).addClass('dim-color');
+          continue;
+        }
+
+        let color = nodes_data[con].cost > 1 ? 'crimson' : '#4CAF50';
+        connections[con].addOverlay(['Custom', {
+          create: function (component) {
+            return $(`<p style="color: white; background-color: ${color}; padding: 2px; border-radius: 5px; margin-left: 100px; margin-top: 18px; font-size: xx-small;">耗时${nodes_data[con].cost}s</p>`);
+          },
+          location: 1,
+          id: con
+        }]);
+      }
+    }
+  </script>
+</body>
+
+</html>
