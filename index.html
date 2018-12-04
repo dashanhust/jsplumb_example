@@ -8,6 +8,7 @@
   <title>Document</title>
   <style>
     #diagramContainer {
+	  position: relative;
       font-size: smaller;   
       padding: 20px;
       height: 400px;
@@ -235,7 +236,6 @@
 
     function displayTimeCost(nodes_data) {
       for (let con in nodes_data) {
-        debugger
         if (!nodes_data[con].exist) {
           $(`[name=${con}]`).addClass('dim-color');
           continue;
